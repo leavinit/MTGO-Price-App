@@ -1,23 +1,34 @@
-from flask import Flask
+from flask import Flask, render_template, request, Markup
 from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.common.keys import Keys   # For keyboard keys 
+import time                                       # Waiting function  
 from urllib.parse import urljoin
+from forms import CardForm
 
 # fetch page with requests and scrape it w/ BeautifulSoup4
-def scrape():
-    url = "https://www.mtgowikiprice.com/card/ISD/78/Snapcaster_Mage"
+def scrape(card):
+    # url = "https://www.mtgowikiprice.com/card/ISD/78/Snapcaster_Mage"
+    # card = "Snapcaster Mage"
+    url = "https://www.mtgowikiprice.com/"
 
     options = Options()
-    options.headless = True
+    # options.headless = True
     driver = webdriver.Firefox(options=options)
     driver.get(url)
-
+    search = driver.find_elements_by_id('_cardskeyword_home')[0]
+    # print(search)
+    time.sleep(2)
+    search.send_keys(card)
+    time.sleep(2)
+    search.send_keys(Keys.ENTER) 
+    time.sleep(4)
     html = driver.page_source
     driver.quit()
     # print (html)
-    soup = BeautifulSoup(html)
+    soup = BeautifulSoup(html, features="html.parser")
 
     card_row = soup.find_all("td",class_="sell_price_round") #Collects rows of sell information 
     # imgs = card_row.find_all("img")
@@ -38,8 +49,8 @@ def scrape():
         ["/digits/13e544f95e9be31f4db121d189439a69.png", "."]
     ] 
             
-    print ("\n\n")
-    img_list = ""
+    # print ("\n\n")
+    img_list = "<div id='pricesList' class='prices'>"
     for index1, i in enumerate(card_row) :
         # print('length of images: ')
         # print(len(i.find_all('img')))
@@ -57,11 +68,29 @@ def scrape():
             # img_list += str(new_img)
             # print (card_row)
         img_list += "</div>"
-    return str(img_list)
-# setup Flask App and define routes
+    img_list += "</div>"
+    return img_list
 
-app = Flask(__name__)
-imgs = scrape()
-@app.route('/')
+
+# setup Flask 'App and define routes
+
+app = Flask(__name__, template_folder="templates")
+app.config['SECRET_KEY'] = 'you-will-never-guess'
+
+# imgs = scrape(card="Wasteland Strangler")
+imgs = "randomImages here"
+# print (Markup(imgs))
+if imgs:
+    print ("---imgs loaded--")
+@app.route('/',methods=["GET","POST"])
 def index():
-    return imgs
+    # return imgs
+    form = CardForm()
+    if request.method == "GET":
+        return render_template('/cardForm.html', form=form)
+    if request.method == "POST":
+        card = request.form.get('card_name')
+        # print(card)
+        imgs = scrape(card="Wasteland Strangler")
+
+        return render_template('/index.html', prices=imgs, card_name=card)
