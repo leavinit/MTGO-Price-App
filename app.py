@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, Markup
 from bs4 import BeautifulSoup
 import requests
 from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys   # For keyboard keys 
 import time                                       # Waiting function  
 from urllib.parse import urljoin
 from forms import CardForm
+
 
 # fetch page with requests and scrape it w/ BeautifulSoup4
 def scrape(card):
@@ -15,16 +16,16 @@ def scrape(card):
     url = "https://www.mtgowikiprice.com/"
 
     options = Options()
-    # options.headless = True
-    driver = webdriver.Firefox(options=options)
+    options.headless = True
+    driver = webdriver.Chrome(options=options)
     driver.get(url)
     search = driver.find_elements_by_id('_cardskeyword_home')[0]
     # print(search)
-    time.sleep(2)
+    time.sleep(1)
     search.send_keys(card)
     time.sleep(2)
     search.send_keys(Keys.ENTER) 
-    time.sleep(4)
+    time.sleep(3)
     html = driver.page_source
     driver.quit()
     # print (html)
